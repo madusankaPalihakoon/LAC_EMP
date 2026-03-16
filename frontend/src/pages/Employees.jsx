@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from "react";
 import API from "../api/axios";
 import EmployeeTable from "../components/EmployeeTable";
+import { useNavigate } from "react-router-dom";
 
 export default function Employees() {
   const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
 
-  const [form, setForm] = useState({
+  const [search, setSearch] = useState({
     employee_id: "",
-    name: "",
-    nic: "",
-    phone: "",
-    email: "",
+    designation: "",
     center: "",
+    nic: "",
   });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchEmployees();
@@ -21,18 +23,35 @@ export default function Employees() {
   const fetchEmployees = async () => {
     const res = await API.get("employees/");
     setEmployees(res.data);
+    setFilteredEmployees(res.data);
   };
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
+    setSearch({
+      ...search,
       [e.target.name]: e.target.value,
     });
   };
 
-  const addEmployee = async () => {
-    await API.post("employees/", form);
-    fetchEmployees();
+  const handleSearch = () => {
+    const filtered = employees.filter((emp) => {
+      return (
+        (search.employee_id === "" ||
+          emp.employee_id?.toString().includes(search.employee_id)) &&
+        (search.designation === "" ||
+          emp.current_designation
+            ?.toLowerCase()
+            .includes(search.designation.toLowerCase())) &&
+        (search.center === "" ||
+          emp.center_department
+            ?.toLowerCase()
+            .includes(search.center.toLowerCase())) &&
+        (search.nic === "" ||
+          emp.nic_number?.toLowerCase().includes(search.nic.toLowerCase()))
+      );
+    });
+
+    setFilteredEmployees(filtered);
   };
 
   const deleteEmployee = async (id) => {
@@ -40,23 +59,42 @@ export default function Employees() {
     fetchEmployees();
   };
 
+  const editEmployee = (id) => {
+    navigate(`/employees/edit/${id}`);
+  };
+
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Employee Management</h1>
+      <div className="flex justify-between mb-6">
+        <h1 className="text-2xl font-bold">Employee Management</h1>
 
-      {/* Add Employee Form */}
+        <button
+          onClick={() => navigate("/employees/add")}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          Add Employee
+        </button>
+      </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      {/* SEARCH PANEL */}
+      <div className="grid grid-cols-5 gap-4 mb-6">
         <input
           name="employee_id"
-          placeholder="Employee ID"
+          placeholder="EMP ID"
           onChange={handleChange}
           className="border p-2 rounded"
         />
 
         <input
-          name="name"
-          placeholder="Name"
+          name="designation"
+          placeholder="Designation"
+          onChange={handleChange}
+          className="border p-2 rounded"
+        />
+
+        <input
+          name="center"
+          placeholder="Center / Department"
           onChange={handleChange}
           className="border p-2 rounded"
         />
@@ -68,36 +106,19 @@ export default function Employees() {
           className="border p-2 rounded"
         />
 
-        <input
-          name="phone"
-          placeholder="Phone"
-          onChange={handleChange}
-          className="border p-2 rounded"
-        />
-
-        <input
-          name="email"
-          placeholder="Email"
-          onChange={handleChange}
-          className="border p-2 rounded"
-        />
-
-        <input
-          name="center"
-          placeholder="Center"
-          onChange={handleChange}
-          className="border p-2 rounded"
-        />
+        <button
+          onClick={handleSearch}
+          className="bg-blue-600 text-white rounded"
+        >
+          Search
+        </button>
       </div>
 
-      <button
-        onClick={addEmployee}
-        className="bg-green-600 text-white px-4 py-2 rounded mb-6"
-      >
-        Add Employee
-      </button>
-
-      <EmployeeTable employees={employees} deleteEmployee={deleteEmployee} />
+      <EmployeeTable
+        employees={filteredEmployees}
+        deleteEmployee={deleteEmployee}
+        editEmployee={editEmployee}
+      />
     </div>
   );
 }

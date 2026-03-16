@@ -1,43 +1,54 @@
-import React from "react";
-
-export default function EmployeeTable({ employees, deleteEmployee }) {
+export default function EmployeeTable({
+  employees,
+  deleteEmployee,
+  editEmployee,
+}) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white shadow-md rounded-lg">
-        <thead className="bg-blue-600 text-white">
-          <tr>
-            <th className="py-2 px-4">Employee ID</th>
-            <th className="py-2 px-4">Name</th>
-            <th className="py-2 px-4">NIC</th>
-            <th className="py-2 px-4">Phone</th>
-            <th className="py-2 px-4">Email</th>
-            <th className="py-2 px-4">Center</th>
-            <th className="py-2 px-4">Action</th>
+    <table className="w-full border">
+      <thead>
+        <tr className="bg-gray-200">
+          <th>EMP ID</th>
+          <th>Name</th>
+          <th>Designation</th>
+          <th>Center/Department</th>
+          <th>NIC</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Appointment Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {employees.map((emp) => (
+          <tr key={emp.id} className="text-center border-t">
+            <td>{emp.employee_id}</td>
+            <td>{emp.name}</td>
+            <td>{emp.current_designation}</td>
+            <td>{emp.center_department}</td>
+            <td>{emp.nic_number}</td>
+            <td>{emp.phone_number}</td>
+            <td>{emp.email}</td>
+            <td>{emp.appointment_date}</td>
+
+            <td className="space-x-1">
+              <button
+                onClick={() => editEmployee(emp.id)}
+                className="bg-blue-500 text-white px-1  rounded"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={() => deleteEmployee(emp.id)}
+                className="bg-red-500 text-white px-1 rounded"
+              >
+                Delete
+              </button>
+            </td>
           </tr>
-        </thead>
-
-        <tbody>
-          {employees.map((emp) => (
-            <tr key={emp.id} className="border-b">
-              <td className="py-2 px-4">{emp.employee_id}</td>
-              <td className="py-2 px-4">{emp.name}</td>
-              <td className="py-2 px-4">{emp.nic}</td>
-              <td className="py-2 px-4">{emp.phone}</td>
-              <td className="py-2 px-4">{emp.email}</td>
-              <td className="py-2 px-4">{emp.center}</td>
-
-              <td className="py-2 px-4">
-                <button
-                  onClick={() => deleteEmployee(emp.id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+        ))}
+      </tbody>
+    </table>
   );
 }
