@@ -33,14 +33,14 @@ export default function EmployeeTable({
 
             <td className="space-x-1">
               <button
-                onClick={() => editEmployee(emp.id)}
-                className="bg-blue-500 text-white px-1  rounded"
+                onClick={() => editEmployee(emp.employee_id)}
+                className="bg-blue-500 text-white px-1 rounded"
               >
                 Edit
               </button>
 
               <button
-                onClick={() => deleteEmployee(emp.id)}
+                onClick={() => deleteEmployee(emp.employee_id)}
                 className="bg-red-500 text-white px-1 rounded"
               >
                 Delete

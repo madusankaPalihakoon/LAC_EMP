@@ -1,28 +1,23 @@
 from django.db import models
 
-# Create your models here.
 class Employee(models.Model):
-
     employee_id = models.CharField(max_length=20, unique=True)
-    nic_number = models.CharField(max_length=20, unique=True)
+    nic_number = models.CharField(max_length=20, blank=True, null=True)
+    name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    center_department = models.CharField(max_length=150, blank=True, null=True)
+    designation = models.CharField(max_length=150, blank=True, null=True)
+    current_designation = models.CharField(max_length=150, blank=True, null=True)
+    appointment_date = models.DateField(blank=True, null=True)
+    promotion_date = models.DateField(blank=True, null=True)
+    pension_date = models.DateField(blank=True, null=True)
+    next_increment_date = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
 
-    name = models.CharField(max_length=150)
-    phone_number = models.CharField(max_length=15)
-    email = models.EmailField()
-
-    center_department = models.CharField(max_length=150)
-
-    designation = models.CharField(max_length=150)
-    current_designation = models.CharField(max_length=150)
-
-    appointment_date = models.DateField()
-    promotion_date = models.DateField(null=True, blank=True)
-
-    pension_date = models.DateField()
-    next_increment_date = models.DateField()
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        db_table = "employee_employee"
 
     def __str__(self):
-        return self.name
+        return f"{self.employee_id} - {self.name}"
