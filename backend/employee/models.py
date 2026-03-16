@@ -19,10 +19,10 @@ class Employee(models.Model):
     promotion_date = models.DateField(null=True, blank=True)
 
     pension_date = models.DateField()
-
     next_increment_date = models.DateField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
