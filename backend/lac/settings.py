@@ -40,8 +40,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'rest_framework.authtoken',
     'employee'
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -85,8 +92,18 @@ DATABASES = {
         'PASSWORD': 'user', # user
         'HOST': 'localhost',
         'PORT': '3306', #3310
-    }
+    },
+    # 'second_db': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': 'lac_emp',
+    #     'USER': 'root',
+    #     'PASSWORD': 'user', # user
+    #     'HOST': 'localhost',
+    #     'PORT': '3306', #3310
+    # }
 }
+
+# DATABASE_ROUTERS = ['lac.db_router.DatabaseRouter']
 
 
 # Password validation
@@ -121,6 +138,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "192.168.100.101",
+    "0.0.0.0",
 ]
 
 # Internationalization

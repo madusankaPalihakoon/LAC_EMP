@@ -5,35 +5,77 @@ import { saveAs } from "file-saver";
 
 export default function Increment() {
   const [employees, setEmployees] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [filtered, setFiltered] = useState([]);
 
   const [search, setSearch] = useState({
-    employee_id: "",
+    epf_no: "",
     year: "",
     month: "",
   });
 
+  const months = [
+    { value: "1", label: "January" },
+    { value: "2", label: "February" },
+    { value: "3", label: "March" },
+    { value: "4", label: "April" },
+    { value: "5", label: "May" },
+    { value: "6", label: "June" },
+    { value: "7", label: "July" },
+    { value: "8", label: "August" },
+    { value: "9", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
+  ];
+
   useEffect(() => {
-    fetchEmployees();
+    fetchData();
   }, []);
 
-  const fetchEmployees = async () => {
-    const res = await API.get("employees/");
-    setEmployees(res.data);
-    setFiltered(res.data);
+  const fetchData = async () => {
+    try {
+      const empRes = await API.get("employees/");
+      const promoRes = await API.get("promotions/");
+
+      setEmployees(empRes.data);
+      setPromotions(promoRes.data);
+      setFiltered(empRes.data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const calculateNextIncrement = (emp) => {
-    const baseDate = emp.promotion_date || emp.appointment_date;
-    if (!baseDate) return null;
+  const getLatestPromotion = (epfNo) => {
+    const employeePromotions = promotions.filter((p) => p.epf_no === epfNo);
 
-    const base = new Date(baseDate);
+    if (!employeePromotions.length) {
+      return null;
+    }
+
+    employeePromotions.sort(
+      (a, b) => new Date(b.promotion_date) - new Date(a.promotion_date),
+    );
+
+    return employeePromotions[0];
+  };
+
+  const calculateNextIncrement = (employee) => {
+    const promotion = getLatestPromotion(employee.epf_no);
+
+    const sourceDate = promotion
+      ? promotion.promotion_date
+      : employee.date_joined;
+
+    if (!sourceDate) {
+      return null;
+    }
+
+    const source = new Date(sourceDate);
+
     const currentYear = new Date().getFullYear();
 
-    const next = new Date(base);
-    next.setFullYear(currentYear);
-
-    return next;
+    return new Date(currentYear, source.getMonth(), source.getDate());
   };
 
   const handleChange = (e) => {
@@ -44,18 +86,22 @@ export default function Increment() {
   };
 
   const handleSearch = () => {
-    const result = employees.filter((emp) => {
-      const incDate = calculateNextIncrement(emp);
-      if (!incDate) return false;
+    const result = employees.filter((employee) => {
+      const increment = calculateNextIncrement(employee);
 
-      const incYear = incDate.getFullYear().toString();
-      const incMonth = (incDate.getMonth() + 1).toString();
+      if (!increment) {
+        return false;
+      }
+
+      const year = increment.getFullYear().toString();
+
+      const month = (increment.getMonth() + 1).toString();
 
       return (
-        (search.employee_id === "" ||
-          emp.employee_id.includes(search.employee_id)) &&
-        (search.year === "" || incYear === search.year) &&
-        (search.month === "" || incMonth === search.month)
+        (search.epf_no === "" ||
+          employee.epf_no?.toString().includes(search.epf_no)) &&
+        (search.year === "" || search.year === year) &&
+        (search.month === "" || search.month === month)
       );
     });
 
@@ -63,78 +109,101 @@ export default function Increment() {
   };
 
   const exportToExcel = () => {
-    const data = filtered.map((emp) => {
-      const baseDate = emp.promotion_date || emp.appointment_date;
-      let nextIncrement = "";
+    const data = filtered.map((employee) => {
+      const promotion = getLatestPromotion(employee.epf_no);
 
-      if (baseDate) {
-        const base = new Date(baseDate);
-        const currentYear = new Date().getFullYear();
-        base.setFullYear(currentYear);
-        nextIncrement = base.toISOString().split("T")[0];
-      }
+      const increment = calculateNextIncrement(employee);
 
       return {
-        "EMP ID": emp.employee_id,
-        Name: emp.name,
-        Designation: emp.current_designation,
-        Center: emp.center_department,
-        "Appointment Date": emp.appointment_date,
-        "Promotion Date": emp.promotion_date || "",
-        "Next Increment Date": nextIncrement,
+        "EPF No": employee.epf_no,
+        Name: employee.employee_name,
+        Designation: employee.designation,
+        Center: employee.center,
+        "Join Date": employee.date_joined,
+        "Latest Promotion": promotion?.promotion_date || "",
+        "Next Increment": increment?.toISOString().split("T")[0] || "",
       };
     });
 
     const worksheet = XLSX.utils.json_to_sheet(data);
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Increment List");
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Increment Report");
 
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
     });
 
-    const fileData = new Blob([excelBuffer], {
+    const file = new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
 
-    saveAs(fileData, "increment_list.xlsx");
+    saveAs(file, "Increment_Report.xlsx");
   };
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold">Increment Management</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Increment Management</h1>
 
-      <button
-        onClick={exportToExcel}
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
-        Export Excel
-      </button>
+        <button
+          onClick={exportToExcel}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          Export Excel
+        </button>
+      </div>
 
       {/* SEARCH PANEL */}
+
       <div className="grid grid-cols-4 gap-4 mb-6">
         <input
-          name="employee_id"
-          placeholder="Employee ID"
+          name="epf_no"
+          placeholder="EPF No"
+          value={search.epf_no}
           onChange={handleChange}
           className="border p-2 rounded"
         />
 
-        <input
+        <select
           name="year"
-          placeholder="Increment Year (2026)"
+          value={search.year}
           onChange={handleChange}
           className="border p-2 rounded"
-        />
+        >
+          <option value="">All Years</option>
 
-        <input
+          <option value="2024">2024</option>
+
+          <option value="2025">2025</option>
+
+          <option value="2026">2026</option>
+
+          <option value="2027">2027</option>
+
+          <option value="2028">2028</option>
+
+          <option value="2029">2029</option>
+
+          <option value="2030">2030</option>
+        </select>
+
+        <select
           name="month"
-          placeholder="Increment Month (1-12)"
+          value={search.month}
           onChange={handleChange}
           className="border p-2 rounded"
-        />
+        >
+          <option value="">All Months</option>
+
+          {months.map((month) => (
+            <option key={month.value} value={month.value}>
+              {month.label}
+            </option>
+          ))}
+        </select>
 
         <button
           onClick={handleSearch}
@@ -145,40 +214,56 @@ export default function Increment() {
       </div>
 
       {/* TABLE */}
-      <table className="w-full border">
-        <thead>
-          <tr className="bg-gray-200">
-            <th>EMP ID</th>
-            <th>Name</th>
-            <th>Designation</th>
-            <th>Center</th>
-            <th>Appointment</th>
-            <th>Promotion</th>
-            <th>Next Increment</th>
-          </tr>
-        </thead>
 
-        <tbody>
-          {filtered.map((emp) => {
-            const incDate = calculateNextIncrement(emp);
+      <div className="overflow-x-auto">
+        <table className="w-full border">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="p-2">EPF No</th>
 
-            return (
-              <tr key={emp.id} className="text-center border-t">
-                <td>{emp.employee_id}</td>
-                <td>{emp.name}</td>
-                <td>{emp.current_designation}</td>
-                <td>{emp.center_department}</td>
-                <td>{emp.appointment_date}</td>
-                <td>{emp.promotion_date || "-"}</td>
+              <th className="p-2">Name</th>
 
-                <td className="font-semibold text-green-700">
-                  {incDate ? incDate.toISOString().split("T")[0] : "-"}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              <th className="p-2">Designation</th>
+
+              <th className="p-2">Center</th>
+
+              <th className="p-2">Join Date</th>
+
+              <th className="p-2">Latest Promotion</th>
+
+              <th className="p-2">Next Increment</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filtered.map((employee) => {
+              const promotion = getLatestPromotion(employee.epf_no);
+
+              const increment = calculateNextIncrement(employee);
+
+              return (
+                <tr key={employee.id} className="border-t text-center">
+                  <td>{employee.epf_no}</td>
+
+                  <td>{employee.employee_name}</td>
+
+                  <td>{employee.designation}</td>
+
+                  <td>{employee.center}</td>
+
+                  <td>{employee.date_joined}</td>
+
+                  <td>{promotion?.promotion_date || "-"}</td>
+
+                  <td className="font-semibold text-green-700">
+                    {increment?.toISOString().split("T")[0] || "-"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

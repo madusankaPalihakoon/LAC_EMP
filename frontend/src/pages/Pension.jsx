@@ -3,25 +3,27 @@ import API from "../api/axios";
 
 export default function Pension() {
   const [employees, setEmployees] = useState([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchEmployees();
   }, []);
 
   const fetchEmployees = async () => {
-    const res = await API.get("employees/");
-    setEmployees(res.data);
+    try {
+      const res = await API.get("employees/");
+      setEmployees(res.data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  function getDOBfromNIC(nic) {
+  const getDOBFromNIC = (nic) => {
     if (!nic) return null;
 
     nic = nic.toString().trim();
 
-    // Old NIC format check (9 digits + V/X)
     const oldNIC = /^[0-9]{9}[vVxX]$/;
-
-    // New NIC format check (12 digits)
     const newNIC = /^[0-9]{12}$/;
 
     if (!oldNIC.test(nic) && !newNIC.test(nic)) {
@@ -34,6 +36,7 @@ export default function Pension() {
     if (nic.length === 10) {
       year = parseInt(nic.substring(0, 2));
       days = parseInt(nic.substring(2, 5));
+
       year = year > 30 ? 1900 + year : 2000 + year;
     } else {
       year = parseInt(nic.substring(0, 4));
@@ -44,57 +47,94 @@ export default function Pension() {
       days -= 500;
     }
 
-    const date = new Date(year, 0);
-    date.setDate(days);
+    const dob = new Date(year, 0);
+    dob.setDate(days);
 
-    return date;
-  }
+    return dob;
+  };
 
-  function getPensionDate(nic) {
-    const dob = getDOBfromNIC(nic);
+  const getDOB = (employee) => {
+    if (employee.date_of_birth) {
+      return new Date(employee.date_of_birth);
+    }
+
+    return getDOBFromNIC(employee.identity_card_number);
+  };
+
+  const getPensionDate = (employee) => {
+    const dob = getDOB(employee);
 
     if (!dob) return null;
 
     const pension = new Date(dob);
-    pension.setFullYear(dob.getFullYear() + 65);
+
+    pension.setFullYear(pension.getFullYear() + 60);
 
     return pension;
-  }
+  };
+
+  const filteredEmployees = employees.filter(
+    (emp) =>
+      emp.epf_no?.toLowerCase().includes(search.toLowerCase()) ||
+      emp.employee_name?.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Pension Management</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Pension Management</h1>
+
+        <input
+          type="text"
+          placeholder="Search EPF / Name"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border p-2 rounded w-80"
+        />
+      </div>
 
       <table className="w-full border">
         <thead>
-          <tr className="bg-gray-200">
-            <th>EMP ID</th>
-            <th>Name</th>
-            <th>Designation</th>
-            <th>Center</th>
-            <th>NIC</th>
-            <th>Date of Birth</th>
-            <th>Pension Date</th>
+          <tr className="bg-gray-200 text-center">
+            <th className="p-2">EPF No</th>
+
+            <th className="p-2">Employee Name</th>
+
+            <th className="p-2">Designation</th>
+
+            <th className="p-2">Center</th>
+
+            <th className="p-2">NIC</th>
+
+            <th className="p-2">Date of Birth</th>
+
+            <th className="p-2">Pension Date</th>
           </tr>
         </thead>
 
         <tbody>
-          {employees.map((emp) => {
-            const dob = getDOBfromNIC(emp.nic_number);
-            const pension = getPensionDate(emp.nic_number);
+          {filteredEmployees.map((emp) => {
+            const dob = getDOB(emp);
+
+            const pension = getPensionDate(emp);
 
             return (
-              <tr key={emp.id} className="text-center border-t">
-                <td>{emp.employee_id}</td>
-                <td>{emp.name}</td>
-                <td>{emp.current_designation}</td>
-                <td>{emp.center_department}</td>
+              <tr key={emp.id} className="border-t text-center">
+                <td className="p-2">{emp.epf_no}</td>
 
-                <td>{emp.nic_number || "-"}</td>
+                <td className="p-2">{emp.employee_name}</td>
 
-                <td>{dob ? dob.toISOString().split("T")[0] : "Invalid NIC"}</td>
+                <td className="p-2">{emp.designation}</td>
 
-                <td className="text-red-600 font-semibold">
+                <td className="p-2">{emp.center}</td>
+
+                <td className="p-2">{emp.identity_card_number}</td>
+
+                <td className="p-2">
+                  {dob ? dob.toISOString().split("T")[0] : "-"}
+                </td>
+
+                <td className="p-2 text-red-600 font-semibold">
                   {pension ? pension.toISOString().split("T")[0] : "-"}
                 </td>
               </tr>

@@ -21,3 +21,13 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('employee.urls')),
 ]
+# {
+#     "username" : "admin",
+#     "password" : "admin",
+# }
+
+# {
+#     "username" : "admin-wp",
+#     "password" : "admin-wp",
+#     "center"   : "wp"
+# }
